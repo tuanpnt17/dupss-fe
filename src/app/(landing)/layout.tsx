@@ -23,9 +23,23 @@ const LandingLayout = ({
               <Link href="/courses" className="hover:text-orange-100 transition-colors">Khóa học</Link>
 
             </nav>
-            <button className="bg-white text-orange-500 px-6 py-2 rounded-full font-semibold hover:bg-orange-50 transition-colors">
-              Tham Gia Ngay
-            </button>
+            <div className="flex gap-2">
+              <button className="bg-white text-orange-500 px-6 py-2 rounded-full font-semibold hover:bg-orange-50 transition-colors">
+                Tham Gia Ngay
+              </button>
+              <Link
+                href="/signin"
+                className="bg-white text-orange-500 px-6 py-2 rounded-full font-semibold hover:bg-orange-50 transition-colors flex items-center"
+              >
+                Đăng Nhập
+              </Link>
+              <Link
+                href="/signup"
+                className="bg-orange-100 text-orange-600 px-6 py-2 rounded-full font-semibold hover:bg-orange-200 transition-colors border-2 border-orange-500 flex items-center"
+              >
+                Đăng Ký
+              </Link>
+            </div>
           </div>
         </div>
       </header>
