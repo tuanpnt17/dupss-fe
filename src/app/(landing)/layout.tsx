@@ -22,6 +22,7 @@ const LandingLayout = ({
               <Link href="#get-involved" className="hover:text-orange-100 transition-colors">Tham Gia</Link>
               <Link href="/courses" className="hover:text-orange-100 transition-colors">Khóa học</Link>
               <Link href="/my-tests" className="hover:text-orange-100 transition-colors">Bài kiểm tra</Link>
+              <Link href="/workshops" className="hover:text-orange-100 transition-colors">Workshop</Link>
             </nav>
             <div className="flex gap-2">
               <button className="bg-white text-orange-500 px-6 py-2 rounded-full font-semibold hover:bg-orange-50 transition-colors">
@@ -64,6 +65,7 @@ const LandingLayout = ({
                 <li><Link href="#stories" className="text-gray-400 hover:text-white">Câu Chuyện Thành Công</Link></li>
                 <li><Link href="/blogs" className="text-gray-400 hover:text-white">Blog</Link></li>
                 <li><Link href="#get-involved" className="text-gray-400 hover:text-white">Tham Gia</Link></li>
+                <li><Link href="/workshops" className="text-gray-400 hover:text-white">Workshop</Link></li>
               </ul>
             </div>
             <div>
