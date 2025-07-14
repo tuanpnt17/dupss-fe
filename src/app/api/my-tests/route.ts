@@ -40,22 +40,10 @@ export async function GET(request: Request) {
       case 'result':
         return NextResponse.json(await apiService.fetchTestResults(toTestResultQueryParams(searchParams)));
 
-        case 'questions-by-test': {
-          const testId = searchParams.get('TestId');
-          if (!testId) {
-            return NextResponse.json({ message: 'Missing TestId' }, { status: 400 });
-          }
-        
-          try {
-            const questions = await apiService.fetchTestQuestionsByTestId(testId);
-            return NextResponse.json(questions);
-          } catch (err) {
-            console.error('Error fetching questions for TestId:', testId, err);
-            return NextResponse.json({ message: 'Failed to fetch questions' }, { status: 500 });
-          }
-        }
-        
-      
+      case 'questions-by-test': {
+        const testId = searchParams.get('TestId') || '';
+        return NextResponse.json(await apiService.fetchTestQuestionsByTestId(testId));
+      }
 
       case 'option-result': {
         const testResultsId = searchParams.get('TestResultsId') || '';
