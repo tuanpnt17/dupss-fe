@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { blogsService } from '@/services/blogs.service';
 
 // Course categories
 const categories = [
@@ -56,7 +57,11 @@ const courses = [
   },
 ];
 
-export default function CoursesPage() {
+export default async function CoursesPage() {
+
+  const blogs = await blogsService.getBlogs();
+  console.log(blogs);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
