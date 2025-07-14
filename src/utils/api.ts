@@ -1,5 +1,6 @@
-/* eslint-disable lines-around-comment */
-/* eslint-disable padding-line-between-statements */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
 /* eslint-disable prefer-const */
 import queryString from 'query-string'
 
@@ -43,7 +44,8 @@ export const sendRequest = async <T>(props: IRequest) => {
         try {
           errorData = JSON.parse(errorText)
         } catch (parseError) {
-          console.error(`Error response is not JSON:`, errorText)
+          console.error(`Error response is not JSON:`, parseError)
+          console.error(`Error text is not JSON:`, errorText)
         }
 
         return {

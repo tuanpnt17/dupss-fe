@@ -47,7 +47,8 @@ const lessonData = {
   },
 };
 
-export default function LearnPage({ params }: { params: { id: string } }) {
+export default async function LearnPage({ params }: { params?: Promise<{ id: string }> }) {
+  const resolvedParams = params ? await params : undefined;
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Course Navigation Header */}
@@ -55,7 +56,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <Link
-              href={`/courses/${params.id}`}
+              href={`/courses/${resolvedParams?.id}`}
               className="text-gray-600 hover:text-orange-500 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,7 +110,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
               <Link
-                href={`/courses/${params.id}/learn/${lessonData.prevLesson.id}`}
+                href={`/courses/${resolvedParams?.id}/learn/${lessonData.prevLesson.id}`}
                 className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 rounded-lg shadow hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,7 +119,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                 <span>Bài trước: {lessonData.prevLesson.title}</span>
               </Link>
               <Link
-                href={`/courses/${params.id}/learn/${lessonData.nextLesson.id}`}
+                href={`/courses/${resolvedParams?.id}/learn/${lessonData.nextLesson.id}`}
                 className="flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg shadow hover:bg-orange-600 transition-colors"
               >
                 <span>Bài tiếp: {lessonData.nextLesson.title}</span>
