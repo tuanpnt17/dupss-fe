@@ -39,11 +39,14 @@ const getBlogById = async (id: string): Promise<IBlog | null> => {
   return res; // Trả về trực tiếp dữ liệu nếu thành công, null nếu lỗi
 };
 
-const createBlog = async (blog: IBlogCreate): Promise<IBackendResponse<any>> => {
+const createBlog = async (blog: IBlogCreate , token: string): Promise<IBackendResponse<any>> => {
   const res = await sendRequest<IBackendResponse<any>>({
     endpoint: "/Blogs",
     method: "POST",
     body: blog,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (res.isSuccess) {
@@ -53,11 +56,14 @@ const createBlog = async (blog: IBlogCreate): Promise<IBackendResponse<any>> => 
   return res;
 };
 
-const updateBlog = async (id: string, blog: Partial<IBlogCreate>): Promise<IBackendResponse<any>> => {
+const updateBlog = async (id: string, blog: Partial<IBlogCreate>, token: string): Promise<IBackendResponse<any>> => {
   const res = await sendRequest<IBackendResponse<any>>({
     endpoint: `/Blogs/${id}`,
     method: "PUT",
     body: blog,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (res.isSuccess) {
