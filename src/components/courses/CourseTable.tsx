@@ -5,6 +5,8 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from "../ui/table"
 import Badge from "../ui/badge/Badge";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { EyeIcon } from "@/icons";
+import Button from "@mui/material/Button";
 
 interface Course {
   id: number;
@@ -127,12 +129,6 @@ export default function CourseTable() {
                   isHeader
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
-                  Participants
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
                   Duration
                 </TableCell>
                 <TableCell
@@ -140,6 +136,12 @@ export default function CourseTable() {
                   className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
                 >
                   Status
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                >
+                  Actions
                 </TableCell>
               </TableRow>
             </TableHeader>
@@ -150,7 +152,6 @@ export default function CourseTable() {
                 <TableRow 
                   key={course.id}
                   className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
-                  onClick={() => handleRowClick(course.id)}
                 >
                   <TableCell
                     className="px-5 py-3 text-gray-800 text-start text-theme-sm font-medium dark:text-white/90">
@@ -179,9 +180,6 @@ export default function CourseTable() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                    {course.participants}
-                  </TableCell>
                   <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                     {course.duration}
                   </TableCell>
@@ -200,6 +198,14 @@ export default function CourseTable() {
                     >
                       {course.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="px-4 py-3 flex items-center gap-2 w-full h-full">
+                    <Button variant="contained" color="success">
+                      Approved
+                    </Button>
+                    <Button variant="contained" color="error">
+                      Rejected
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
