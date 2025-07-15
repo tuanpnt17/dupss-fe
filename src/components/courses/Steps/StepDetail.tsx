@@ -1,105 +1,98 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { IGetStepDetail } from '@/types/steps';
+import { ICourseSection } from '@/types/courses';
+import { stepsService } from '@/services/steps.service';
+import { coursesService } from '@/services/courses.service';
 
-// Sample lesson data
-const lessonData = {
-  id: 3,
-  title: 'Các loại ma túy phổ biến',
-  content: `
-    <h2 class="text-2xl font-bold mb-4">Các loại ma túy phổ biến</h2>
-    <p class="mb-4">Ma túy có thể được phân loại theo nhiều cách khác nhau. Dưới đây là một số loại ma túy phổ biến và tác hại của chúng:</p>
-    
-    <h3 class="text-xl font-semibold mb-3">1. Ma túy tổng hợp</h3>
-    <ul class="list-disc pl-6 mb-4">
-      <li>Methamphetamine (ma túy đá)</li>
-      <li>MDMA (thuốc lắc)</li>
-      <li>Ketamine</li>
-    </ul>
-    
-    <h3 class="text-xl font-semibold mb-3">2. Ma túy tự nhiên</h3>
-    <ul class="list-disc pl-6 mb-4">
-      <li>Cần sa</li>
-      <li>Thuốc phiện</li>
-      <li>Cocain</li>
-    </ul>
-    
-    <h3 class="text-xl font-semibold mb-3">3. Các chất gây nghiện khác</h3>
-    <ul class="list-disc pl-6 mb-4">
-      <li>Rượu</li>
-      <li>Thuốc lá</li>
-      <li>Thuốc an thần</li>
-    </ul>
-  `,
-  videoUrl: 'https://www.youtube.com/embed/example',
-  duration: '25 phút',
-  resources: [
-    { id: 1, title: 'Tài liệu tham khảo', type: 'PDF', size: '2.5 MB' },
-    { id: 2, title: 'Bài tập thực hành', type: 'DOC', size: '1.8 MB' },
-  ],
-  nextLesson: {
-    id: 4,
-    title: 'Tác hại về sức khỏe',
-  },
-  prevLesson: {
-    id: 2,
-    title: 'Ma túy là gì?',
-  },
-};
+export default function StepDetail({ params }: { params: { id: string, stepId: string } }) {
+  const router = useRouter();
+  const [stepDetail, setStepDetail] = useState<IGetStepDetail | null>(null);
+  const [courseSections, setCourseSections] = useState<ICourseSection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
-// Course sections data with progress
-const courseSections = [
-  {
-    id: 1,
-    title: 'Tổng Quan Về Ma Túy',
-    totalLessons: 3,
-    completedLessons: 2,
-    lessons: [
-      { id: 1, title: 'Giới thiệu khóa học', duration: '15 phút', completed: true, current: false },
-      { id: 2, title: 'Ma túy là gì?', duration: '20 phút', completed: true, current: false },
-      { id: 3, title: 'Các loại ma túy phổ biến', duration: '25 phút', completed: false, current: true },
-    ],
-  },
-  {
-    id: 2,
-    title: 'Tác Hại Của Ma Túy',
-    totalLessons: 3,
-    completedLessons: 0,
-    lessons: [
-      { id: 4, title: 'Tác hại về sức khỏe', duration: '30 phút', completed: false, current: false },
-      { id: 5, title: 'Tác hại về tâm lý', duration: '25 phút', completed: false, current: false },
-      { id: 6, title: 'Tác hại về xã hội', duration: '20 phút', completed: false, current: false },
-    ],
-  },
-  {
-    id: 3,
-    title: 'Phòng Tránh Ma Túy',
-    totalLessons: 3,
-    completedLessons: 0,
-    lessons: [
-      { id: 7, title: 'Kỹ năng từ chối', duration: '30 phút', completed: false, current: false },
-      { id: 8, title: 'Xây dựng lối sống lành mạnh', duration: '25 phút', completed: false, current: false },
-      { id: 9, title: 'Tìm kiếm sự giúp đỡ', duration: '20 phút', completed: false, current: false },
-    ],
-  },
-];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch step detail
+        const stepResponse = await stepsService.getStepDetail(params.stepId);
+        if (stepResponse && stepResponse.value) {
+          setStepDetail(stepResponse.value);
+          
+          // Fetch course sections using the courseSectionId from step
+          const sectionsResponse = await coursesService.getCourseSections(params.id);
+          if (sectionsResponse && sectionsResponse.value) {
+            setCourseSections(sectionsResponse.value);
+            // Expand first section by default
+            if (sectionsResponse.value.length > 0) {
+              setExpandedSections(new Set([sectionsResponse.value[0].id]));
+            }
+          }
+        } else {
+          setError('Không thể tải thông tin bài học');
+        }
+      } catch (err) {
+        setError('Đã xảy ra lỗi khi tải dữ liệu');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-// Calculate overall progress
-const totalLessons = courseSections.reduce((sum, section) => sum + section.totalLessons, 0);
-const completedLessons = courseSections.reduce((sum, section) => sum + section.completedLessons, 0);
-const overallProgress = Math.round((completedLessons / totalLessons) * 100);
+    fetchData();
+  }, [params.stepId]);
 
-export default function LearnPage({ params }: { params: { id: string } }) {
-  const [expandedSections, setExpandedSections] = useState<number[]>([1]); // Start with first section expanded
-
-  const toggleSection = (sectionId: number) => {
-    setExpandedSections(prev => 
-      prev.includes(sectionId) 
-        ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
-    );
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
   };
+
+  // Calculate overall progress
+  const totalSteps = courseSections.reduce((sum, section) => sum + section.steps.length, 0);
+  const completedSteps = courseSections.reduce((sum, section) => 
+    sum + section.steps.filter(step => step.id === params.stepId).length, 0);
+  const overallProgress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải bài học...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !stepDetail) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error || 'Không tìm thấy bài học'}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -108,14 +101,14 @@ export default function LearnPage({ params }: { params: { id: string } }) {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <Link
-              href={`/courses/${resolvedParams?.id}`}
+              href={`/courses/${stepDetail.courseSectionId}`}
               className="text-gray-600 hover:text-orange-500 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </Link>
-            <h1 className="text-lg font-semibold text-gray-900">Hiểu Biết Về Ma Túy Cho Thanh Thiếu Niên</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Bài học {stepDetail.stepNumber}</h1>
             <div className="flex items-center gap-4">
               <button className="text-gray-600 hover:text-orange-500 transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,48 +130,50 @@ export default function LearnPage({ params }: { params: { id: string } }) {
           {/* Main Content */}
           <div className="lg:w-2/3">
             {/* Video Player */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
-              <div className="relative h-64 md:h-96">
-                <iframe
-                  src={lessonData.videoUrl}
-                  className="absolute inset-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
+            {stepDetail.videoURL && (
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                <div className="relative h-64 md:h-96">
+                  <iframe
+                    src={getEmbedUrl(stepDetail.videoURL)}
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Lesson Content */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="p-6">
-                <h1 className="text-2xl font-bold mb-4">{lessonData.title}</h1>
+                <h1 className="text-2xl font-bold mb-4">{stepDetail.stepSummary}</h1>
                 <div
                   className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: lessonData.content }}
+                  dangerouslySetInnerHTML={{ __html: stepDetail.content }}
                 />
               </div>
             </div>
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
-              <Link
-                href={`/courses/${resolvedParams?.id}/learn/${lessonData.prevLesson.id}`}
+              <button
+                onClick={() => router.back()}
                 className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 rounded-lg shadow hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>Bài trước: {lessonData.prevLesson.title}</span>
-              </Link>
-              <Link
-                href={`/courses/${resolvedParams?.id}/learn/${lessonData.nextLesson.id}`}
+                <span>Quay lại</span>
+              </button>
+              <button
+                onClick={() => router.push(`/courses/${stepDetail.courseSectionId}/step/${parseInt(stepDetail.id) + 1}`)}
                 className="flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg shadow hover:bg-orange-600 transition-colors"
               >
-                <span>Bài tiếp: {lessonData.nextLesson.title}</span>
+                <span>Bài tiếp theo</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                 </svg>
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -187,7 +182,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
             <div className="space-y-6">
               {/* Course Progress */}
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-bold mb-4">Tiến độ khóa học</h3>
+                <h3 className="text-xl font-bold mb-4">Tiến độ học tập</h3>
                 
                 {/* Overall Progress */}
                 <div className="mb-6">
@@ -202,14 +197,16 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                     ></div>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Đã hoàn thành {completedLessons}/{totalLessons} bài học
+                    Đã hoàn thành {completedSteps}/{totalSteps} bước học
                   </p>
                 </div>
 
                 {/* Course Sections */}
                 <div className="space-y-4">
                   {courseSections.map((section) => {
-                    const isExpanded = expandedSections.includes(section.id);
+                    const isExpanded = expandedSections.has(section.id);
+                    const currentStepInSection = section.steps.find(step => step.id === params.stepId);
+                    
                     return (
                       <div key={section.id} className="border border-gray-200 rounded-lg overflow-hidden">
                         {/* Section Header */}
@@ -229,53 +226,39 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                               >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                               </svg>
-                              <h4 className="font-semibold text-gray-900 text-left">{section.title}</h4>
+                              <h4 className="font-semibold text-gray-900 text-left">{section.sectionName}</h4>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-sm text-gray-600">
-                                {section.completedLessons}/{section.totalLessons}
+                                {section.steps.length} bước
                               </span>
-                              <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                                <div
-                                  className="bg-orange-500 h-1.5 rounded-full transition-all duration-300"
-                                  style={{ 
-                                    width: `${section.totalLessons > 0 ? (section.completedLessons / section.totalLessons) * 100 : 0}%` 
-                                  }}
-                                ></div>
-                              </div>
                             </div>
                           </div>
                         </button>
                         
-                        {/* Section Lessons */}
+                        {/* Section Steps */}
                         {isExpanded && (
                           <div className="divide-y divide-gray-100">
-                            {section.lessons.map((lesson) => (
+                            {section.steps.sort((a, b) => a.stepNumber - b.stepNumber).map((step) => (
                               <div
-                                key={lesson.id}
+                                key={step.id}
                                 className={`px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer ${
-                                  lesson.current ? 'bg-orange-50 border-l-4 border-orange-500' : ''
+                                  step.id === params.stepId ? 'bg-orange-50 border-l-4 border-orange-500' : ''
                                 }`}
+                                onClick={() => router.push(`/courses/${params.id}/step/${step.id}`)}
                               >
                                 <div className="flex items-center gap-3 flex-1">
-                                  {lesson.completed ? (
-                                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    </div>
-                                  ) : lesson.current ? (
+                                  {step.id === params.stepId ? (
                                     <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
                                       <div className="w-2 h-2 bg-white rounded-full"></div>
                                     </div>
                                   ) : (
                                     <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
                                   )}
-                                  <span className={`text-sm ${lesson.current ? 'font-medium text-orange-700' : 'text-gray-700'}`}>
-                                    {lesson.title}
+                                    <span className={`text-sm ${step.id === params.stepId ? 'font-medium text-orange-700' : 'text-gray-700'}`}>
+                                    {step.stepSummary}
                                   </span>
                                 </div>
-                                <span className="text-xs text-gray-500">{lesson.duration}</span>
                               </div>
                             ))}
                           </div>
@@ -287,22 +270,29 @@ export default function LearnPage({ params }: { params: { id: string } }) {
               </div>
 
               {/* Resources */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-bold mb-4">Tài liệu bài học</h3>
-                <div className="space-y-3">
-                  {lessonData.resources.map((resource) => (
-                    <div key={resource.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              {stepDetail.attachment && (
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h3 className="text-xl font-bold mb-4">Tài liệu bài học</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
-                        <span className="text-gray-700">{resource.title}</span>
+                        <span className="text-gray-700">Tài liệu đính kèm</span>
                       </div>
-                      <span className="text-sm text-gray-500">{resource.size}</span>
+                      <a 
+                        href={stepDetail.attachment} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-orange-500 hover:text-orange-600"
+                      >
+                        Tải xuống
+                      </a>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Notes */}
               <div className="bg-white rounded-xl shadow-lg p-6">
@@ -322,3 +312,8 @@ export default function LearnPage({ params }: { params: { id: string } }) {
     </div>
   );
 } 
+
+const getEmbedUrl = (url: string): string => {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
+  return match ? `https://www.youtube.com/embed/${match[1]}` : url;
+};
