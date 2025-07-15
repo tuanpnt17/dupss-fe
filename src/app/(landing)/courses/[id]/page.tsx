@@ -69,15 +69,16 @@ const courseData = {
   ],
 };
 
-export default function CourseDetailPage({ params }: { params: { id: string } }) {
+export default async function CourseDetailPage({ params }: { params?: Promise<{ id: string }> }) {
   const router = useRouter();
+  const resolvedParams = params ? await params : undefined;
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Course Header */}
       <section className="bg-gradient-to-r from-orange-500 to-red-500 text-white py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">{courseData.title}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">{courseData.title} (ID: {resolvedParams?.id})</h1>
             <p className="text-lg mb-6 opacity-90">{courseData.description}</p>
             
             {/* Instructor Info */}
@@ -225,7 +226,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                     <span className="text-gray-600">{courseData.totalStudents} học viên</span>
                   </div>
                 </div>
-                <button onClick={() => router.push(`/courses/${params.id}/learn`)} className="w-full mt-6 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors">
+                <button onClick={() => router.push(`/courses/${resolvedParams?.id}/learn`)} className="w-full mt-6 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors">
                   Tiếp tục học
                 </button>
               </div>
