@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { testsService } from "@/services/tests.service";
-import { TestQuestionWithOptions } from "@/types/tests";
+import { TestQuestionWithOptions, QuestionOptionTestResult } from "@/types/tests";
+import useAuthStore from "@/stores/useAuthStore";
 
 interface TestDetailsProps {
   testId: string;
@@ -8,11 +9,16 @@ interface TestDetailsProps {
 }
 
 export default function TestDetails({ testId, onSubmitSuccess }: TestDetailsProps) {
+  const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const [questions, setQuestions] = useState<TestQuestionWithOptions[]>([]);
   const [answers, setAnswers] = useState<{ [questionId: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [optionResults, setOptionResults] = useState<QuestionOptionTestResult[] | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const [lastTestResultsId, setLastTestResultsId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -43,18 +49,39 @@ export default function TestDetails({ testId, onSubmitSuccess }: TestDetailsProp
       alert('Vui lòng trả lời tất cả các câu hỏi!');
       return;
     }
+    if (!user || !accessToken) {
+      alert('Bạn cần đăng nhập để nộp bài!');
+      return;
+    }
     setSubmitting(true);
     try {
-      // TODO: Lấy userId thực tế nếu có đăng nhập
-      const userId = "demo-user";
+      const userId = user.userId;
       const selectedOptionIds = Object.values(answers);
-      await testsService.createTestResult({ testId, userId, selectedOptionIds });
+      console.log('selectedOptionIds:', selectedOptionIds);
+      const res = await testsService.createOptionResults({ testId, userId, selectedOptionIds });
+      // Lấy testResultsId từ response (giả sử res.value.id)
+      const testResultsId = res?.value?.id;
+      setLastTestResultsId(testResultsId || null);
       alert('Đã nộp bài thành công!');
       if (onSubmitSuccess) onSubmitSuccess();
     } catch (err: any) {
       alert(`Lỗi khi nộp bài: ${err.message}`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleShowResult = async () => {
+    if (!lastTestResultsId) {
+      alert('Không tìm thấy mã kết quả để xem đáp án!');
+      return;
+    }
+    try {
+      const optionResultsData = await testsService.getOptionResults(lastTestResultsId);
+      setOptionResults(optionResultsData);
+      setShowResult(true);
+    } catch (err: any) {
+      alert('Không thể lấy kết quả: ' + err.message);
     }
   };
 
@@ -300,6 +327,33 @@ export default function TestDetails({ testId, onSubmitSuccess }: TestDetailsProp
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+            {lastTestResultsId && !showResult && (
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  className="px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition"
+                  onClick={handleShowResult}
+                >
+                  Xem kết quả Test
+                </button>
+              </div>
+            )}
+            {showResult && optionResults && (
+              <div className="mt-8 p-6 bg-green-50 rounded-xl border border-green-200">
+                <h2 className="text-lg font-bold mb-4 text-green-700">Đáp án bạn đã chọn:</h2>
+                <ul className="space-y-2">
+                  {optionResults.map((result: QuestionOptionTestResult, idx: number) => (
+                    <li key={result.questionId} className="flex gap-2 items-center">
+                      <span className="font-semibold">{idx + 1}.</span>
+                      <span>{result.questionContent}</span>
+                      <span className="ml-4 text-green-700 font-bold">
+                        {result.selectedOptionContent}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </form>

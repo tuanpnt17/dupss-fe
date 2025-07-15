@@ -13,7 +13,7 @@ export interface WorkshopQueryParams {
     id: string;
     title: string;
     description?: string;
-    imageUrl?: string;
+    imageUrl: string;
     startDate: Date;
     endDate: Date;
     host: string;
@@ -79,5 +79,18 @@ export interface WorkshopQueryParams {
     workshopId: string;
     userId: string;
     note: string;
+  }
+  
+  export interface WorkshopFormValues {
+    title: string;
+    host: string;
+    startDate: string;
+    endDate: string;
+    status: boolean;
+    intro: string;
+    content: string;
+    purpose: string;
+    activities: string;
+    imageUrl: string;
   }
   

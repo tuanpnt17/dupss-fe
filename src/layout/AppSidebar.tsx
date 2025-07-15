@@ -66,6 +66,11 @@ const navItems: NavItem[] = [
     name: "Quản lý Blog",
     path: "/admin/managerblog",
   },
+  {
+    icon: <PageIcon />,
+    name: "Quản lý Workshop",
+    path: "/admin/workshops",
+  },
 ];
 
 const othersItems: NavItem[] = [

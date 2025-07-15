@@ -110,16 +110,19 @@ const getTestResults = async (params: TestQuestionQueryParams = {}): Promise<IMo
   return res.isSuccess ? res.value : null;
 };
 
-const createTestResult = async (data: { testId: string; userId: string; selectedOptionIds: string[] }): Promise<IBackendResponse<any>> => {
+const createTestResult = async (data: { testId: string; userId: string; selectedOptionIds: string[] }, token: string): Promise<IBackendResponse<any>> => {
   const res = await sendRequest<IBackendResponse<any>>({
     endpoint: "/TestQuestions",
     method: "POST",
     body: data,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
   if (res.isSuccess) {
-    await revalidateService.revalidate([REVALIDATE_TAG.TESTS]);
-  }
-  return res;
+    await revalidateService.revalidate([REVALIDATE_TAG.TESTS]); 
+  } 
+  return res; 
 };
 
 // --- 📘 Option Results ---

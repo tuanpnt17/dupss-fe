@@ -110,6 +110,12 @@ const BlogDetails: React.FC = () => {
                   </div>
                 </div>
               </div>
+              <Link
+                href={`/author/${blog.authorId}`} // Giả định có trang author
+                className="bg-orange-500 text-white px-6 py-2 rounded-full hover:bg-orange-600 transition-colors"
+              >
+                Theo dõi tác giả
+              </Link>
             </div>
 
             <div className="prose max-w-none text-gray-800 lg:prose-lg prose-headings:text-gray-900 prose-headings:font-bold prose-p:my-4 prose-ul:my-4 prose-li:ml-6 prose-li:my-2">
@@ -134,19 +140,6 @@ const BlogDetails: React.FC = () => {
                 Chia sẻ
               </button>
             </div>
-          </div>
-
-          {/* Nút quay lại danh sách */}
-          <div className="p-6 lg:p-8">
-            <Link
-              href="/blogs"
-              className="inline-flex items-center text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 font-semibold px-6 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-            >
-              Quay lại danh sách
-              <svg className="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </Link>
           </div>
         </article>
       </div>
