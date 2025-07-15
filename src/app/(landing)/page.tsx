@@ -1,8 +1,21 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import useAuthStore from '@/stores/useAuthStore';
 
 export default function LandingPage() {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    if (user?.role === 'Admin') {
+      router.replace('/admin');
+    }
+  }, [user, router]);
+
   return (
     <div className="w-full">
       {/* Hero Section */}

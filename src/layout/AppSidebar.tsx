@@ -61,6 +61,16 @@ const navItems: NavItem[] = [
       { name: "404 Error", path: "/error-404", pro: false },
     ],
   },
+  {
+    icon: <PageIcon />,
+    name: "Quản lý Blog",
+    path: "/admin/managerblog",
+  },
+  {
+    icon: <PageIcon />,
+    name: "Quản lý Workshop",
+    path: "/admin/workshops",
+  },
 ];
 
 const othersItems: NavItem[] = [

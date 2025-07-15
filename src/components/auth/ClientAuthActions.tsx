@@ -2,11 +2,13 @@
 import Link from "next/link";
 import useAuthStore from "@/stores/useAuthStore";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const ClientAuthActions = () => {
   const { isLoggedIn, user, restore, logout } = useAuthStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => { restore(); }, [restore]);
 
@@ -34,6 +36,12 @@ const ClientAuthActions = () => {
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+          <button
+            onClick={() => { setOpen(false); router.push('/profile'); }}
+            className="block w-full text-left px-4 py-2 text-orange-600 hover:bg-orange-50 rounded-lg"
+          >
+            Trang cá nhân
+          </button>
           <button
             onClick={logout}
             className="block w-full text-left px-4 py-2 text-orange-600 hover:bg-orange-50 rounded-lg"

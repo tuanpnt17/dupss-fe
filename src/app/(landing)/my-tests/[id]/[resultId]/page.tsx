@@ -10,4 +10,4 @@ const TestResultDetailsPage = () => {
   return <TestResultDetails resultId={resultId} testId={id} />;
 };
 
-export default TestResultDetailsPage;
+export default TestResultDetailsPage; 
