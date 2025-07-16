@@ -1,12 +1,21 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Mail, Shield, Trophy } from 'lucide-react';
 import TestResultList from '@/components/tests/TestResultList';
 import useAuthStore from '@/stores/useAuthStore';
+import { useSearchParams } from 'next/navigation';
 
 export default function ProfilePage() {
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState('info');
   const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (urlTab === 'test' || urlTab === 'info') {
+      setTab(urlTab);
+    }
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-orange-100">
