@@ -26,75 +26,6 @@ interface Course {
   status: string;
 }
 
-// Sample data for HIV/addiction community activity courses
-const coursesData: Course[] = [
-  {
-    id: 1,
-    title: "HIV Support Group Facilitation",
-    category: "Support Group",
-    instructor: {
-      image: "/images/user/user-17.jpg",
-      name: "Dr. Sarah Chen",
-      specialization: "HIV Counseling"
-    },
-    participants: 15,
-    duration: "8 weeks",
-    status: "Active"
-  },
-  {
-    id: 2,
-    title: "Addiction Recovery Basics",
-    category: "Recovery",
-    instructor: {
-      image: "/images/user/user-18.jpg",
-      name: "Michael Rodriguez",
-      specialization: "Addiction Specialist"
-    },
-    participants: 12,
-    duration: "12 weeks",
-    status: "Enrolling"
-  },
-  {
-    id: 3,
-    title: "Peer Counseling Workshop",
-    category: "Counseling",
-    instructor: {
-      image: "/images/user/user-20.jpg",
-      name: "Jamie Wilson",
-      specialization: "Peer Support"
-    },
-    participants: 20,
-    duration: "4 weeks",
-    status: "Active"
-  },
-  {
-    id: 4,
-    title: "Harm Reduction Strategies",
-    category: "Harm Reduction",
-    instructor: {
-      image: "/images/user/user-21.jpg",
-      name: "Dr. Aisha Johnson",
-      specialization: "Public Health"
-    },
-    participants: 18,
-    duration: "6 weeks",
-    status: "Coming Soon"
-  },
-  {
-    id: 5,
-    title: "Stigma & Discrimination Workshop",
-    category: "Advocacy",
-    instructor: {
-      image: "/images/user/user-19.jpg",
-      name: "Carlos Mendez",
-      specialization: "Community Advocate"
-    },
-    participants: 25,
-    duration: "3 weeks",
-    status: "Active"
-  }
-];
-
 export default function CourseTable() {
   const router = useRouter();
   const authStore = useAuthStore();
@@ -125,12 +56,24 @@ export default function CourseTable() {
     router.push(`/admin/courses/${courseId}`);
   };
 
-  const handleApproved = (courseId: string) => {
-    console.log(courseId);
+  const handleApproved = async (courseCode: string) => {
+    if (!authStore.accessToken) return;
+    const res = await queuingCourseService.approveQueuingCourse(authStore.accessToken, courseCode, "Approved");
+    if (res.isSuccess) {
+      router.refresh();
+    } else {
+      console.log(res.error.message);
+    }
   };
 
-  const handleRejected = (courseId: string) => {
-    console.log(courseId);
+  const handleRejected = async (courseCode: string) => {
+    if (!authStore.accessToken) return;
+    const res = await queuingCourseService.approveQueuingCourse(authStore.accessToken, courseCode, "Reject");
+    if (res.isSuccess) {
+      router.refresh();
+    } else {
+      console.log(res.error.message);
+    }
   };
 
   function handleEdit(courseCode: string): void {
@@ -198,7 +141,6 @@ export default function CourseTable() {
                 <TableRow 
                   key={course.id}
                   className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors"
-                  onClick={() => handleRowClick(course.id)}
                 >
                   <TableCell
                     className="px-5 py-3 text-gray-800 text-start text-theme-sm font-medium dark:text-white/90">
