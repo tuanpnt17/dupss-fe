@@ -5,6 +5,15 @@ import { Modal } from "@/components/ui/modal";
 import DatePicker from "@/components/form/date-picker";
 import useAuthStore from "@/stores/useAuthStore";
 import { bookingsService } from "@/services/bookings.service";
+import { formatTime } from "@/utils/formatDateTime";
+
+function formatUtcTimeToVN(timeStr: string) {
+  if (!timeStr) return "--:--";
+  const [h, m, s] = timeStr.split(":");
+  const now = new Date();
+  const utcDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), Number(h), Number(m), Number(s) || 0));
+  return utcDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+}
 
 const statusColor = (status: string) => {
   switch (status) {
@@ -26,7 +35,9 @@ const AppointmentsTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({ date: '', time: '', note: '' });
+  const [editForm, setEditForm] = useState({ dateTime: '', note: '' });
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ dateTime: '', note: '' });
   const { accessToken } = useAuthStore();
 
   useEffect(() => {
@@ -37,7 +48,7 @@ const AppointmentsTable: React.FC = () => {
       const data = arr.map((item: any) => ({
         id: item.id,
         date: item.bookingDate ? item.bookingDate.slice(0, 10) : "",
-        time: item.bookingDate ? item.bookingDate.slice(11, 16) : "",
+        bookingDate: item.bookingDate || "", // fallback rỗng nếu không có
         note: item.bookingNote || "",
         counselor: item.staffName || "",
         status: convertStatus(item.bookingStatus),
@@ -65,7 +76,9 @@ const AppointmentsTable: React.FC = () => {
 
   const handleEdit = (appt: any) => {
     setEditData(appt);
-    setEditForm({ date: appt.date, time: appt.time, note: appt.note || '' });
+    // Gộp date và time thành dateTime dạng 'YYYY-MM-DD HH:mm'
+    const dateTime = appt.date && appt.time ? `${appt.date} ${appt.time}` : '';
+    setEditForm({ dateTime, note: appt.note || '' });
     setEditOpen(true);
   };
 
@@ -89,17 +102,37 @@ const AppointmentsTable: React.FC = () => {
     setEditOpen(false);
   };
 
+  const handleCreateChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setCreateForm({ ...createForm, [e.target.name]: e.target.value });
+  };
+
+  const handleCreateAppointment = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Gọi API tạo mới ở đây
+    setCreateOpen(false);
+    setCreateForm({ dateTime: '', note: '' });
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-gray-500">Đang tải dữ liệu...</div>;
   }
 
   return (
     <div className="w-full overflow-x-auto rounded-lg shadow">
+      {/* Nút tạo mới */}
+      <div className="flex justify-end mb-4">
+        <button
+          className="bg-orange-500 text-white px-6 py-2 rounded-xl font-semibold shadow hover:bg-orange-600 transition"
+          onClick={() => setCreateOpen(true)}
+        >
+          Tạo cuộc hẹn mới
+        </button>
+      </div>
       <Table className="w-full min-w-[900px] bg-white border border-gray-200">
         <TableHeader>
           <TableRow className="bg-orange-50">
-            <TableCell isHeader className="px-4 py-3 text-orange-700 font-bold text-center border-b border-orange-200">Ngày</TableCell>
-            <TableCell isHeader className="px-4 py-3 text-orange-700 font-bold text-center border-b border-orange-200">Giờ</TableCell>
+            <TableCell isHeader className="px-4 py-3 text-orange-700 font-bold text-center border-b border-orange-200">Ngày & Giờ</TableCell>
+            {/* Xóa cột Giờ cũ */}
             <TableCell isHeader className="px-4 py-3 text-orange-700 font-bold text-center border-b border-orange-200">Ghi chú</TableCell>
             <TableCell isHeader className="px-4 py-3 text-orange-700 font-bold text-center border-b border-orange-200">Chuyên gia tư vấn</TableCell>
             <TableCell isHeader className="px-4 py-3 text-orange-700 font-bold text-center border-b border-orange-200">Địa chỉ tư vấn online</TableCell>
@@ -110,8 +143,15 @@ const AppointmentsTable: React.FC = () => {
         <TableBody>
           {appointments.map((appt) => (
             <TableRow key={appt.id} className="hover:bg-orange-50 transition">
-              <TableCell className="px-4 py-3 text-center border-b border-gray-100">{appt.date}</TableCell>
-              <TableCell className="px-4 py-3 text-center border-b border-gray-100">{appt.time}</TableCell>
+              <TableCell className="px-4 py-3 text-center border-b border-gray-100">
+                {/* Hiển thị ngày & giờ gộp */}
+                {appt.bookingDate
+                  ? new Date(appt.bookingDate).toLocaleString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                  : appt.dateTime
+                    ? appt.dateTime
+                    : '--'}
+              </TableCell>
+              {/* Xóa cột Giờ cũ */}
               <TableCell className="px-4 py-3 text-center border-b border-gray-100 italic text-gray-600">{appt.note ? <span>{appt.note}</span> : <span className="text-gray-300">(Không có)</span>}</TableCell>
               <TableCell className="px-4 py-3 text-center border-b border-gray-100">{appt.counselor}</TableCell>
               <TableCell className="px-4 py-3 text-center border-b border-gray-100">{appt.location}</TableCell>
@@ -136,20 +176,23 @@ const AppointmentsTable: React.FC = () => {
           <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
             <div className="mb-4">
               <DatePicker
-                id="edit-date"
-                label="Ngày"
-                defaultDate={editForm.date ? new Date(editForm.date) : undefined}
-                onChange={handleDateChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block mb-1 font-medium text-gray-700">Giờ</label>
-              <input
-                type="time"
-                name="time"
-                value={editForm.time}
-                onChange={handleEditChange}
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                key={editForm.dateTime}
+                id="edit-date-time"
+                label="Ngày & Giờ"
+                mode="single"
+                defaultDate={editForm.dateTime ? new Date(editForm.dateTime.replace(' ', 'T')) : undefined}
+                onChange={(dates) => {
+                  if (dates[0]) {
+                    const d = dates[0];
+                    const yyyy = d.getFullYear();
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const hh = String(d.getHours()).padStart(2, '0');
+                    const mi = String(d.getMinutes()).padStart(2, '0');
+                    setEditForm((prev) => ({ ...prev, dateTime: `${yyyy}-${mm}-${dd} ${hh}:${mi}` }));
+                  }
+                }}
+                placeholder="Chọn ngày & giờ"
               />
             </div>
             <div className="mb-6">
@@ -169,6 +212,53 @@ const AppointmentsTable: React.FC = () => {
           </form>
         </div>
       </Modal>
+      {/* Modal tạo mới */}
+      {createOpen && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md relative">
+            <button className="absolute top-4 right-4 text-gray-400 hover:text-red-500" onClick={() => setCreateOpen(false)}>&times;</button>
+            <h2 className="text-2xl font-bold mb-6 text-orange-600">Tạo cuộc hẹn mới</h2>
+            <form onSubmit={handleCreateAppointment} className="space-y-4">
+              <div>
+                <DatePicker
+                  key={createForm.dateTime}
+                  id="create-date-time"
+                  label="Ngày & Giờ"
+                  mode="single"
+                  defaultDate={createForm.dateTime ? new Date(createForm.dateTime.replace(' ', 'T')) : undefined}
+                  onChange={(dates) => {
+                    if (dates[0]) {
+                      const d = dates[0];
+                      const yyyy = d.getFullYear();
+                      const mm = String(d.getMonth() + 1).padStart(2, '0');
+                      const dd = String(d.getDate()).padStart(2, '0');
+                      const hh = String(d.getHours()).padStart(2, '0');
+                      const mi = String(d.getMinutes()).padStart(2, '0');
+                      setCreateForm((prev) => ({ ...prev, dateTime: `${yyyy}-${mm}-${dd} ${hh}:${mi}` }));
+                    }
+                  }}
+                  placeholder="Chọn ngày & giờ"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2">Ghi chú</label>
+                <textarea
+                  name="note"
+                  value={createForm.note}
+                  onChange={handleCreateChange}
+                  className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-200"
+                  rows={3}
+                  placeholder="Nhập ghi chú (nếu có)"
+                />
+              </div>
+              <div className="flex justify-end space-x-2 mt-6">
+                <button type="button" className="px-6 py-2 rounded-xl bg-gray-100 text-gray-600 font-semibold hover:bg-gray-200" onClick={() => setCreateOpen(false)}>Hủy</button>
+                <button type="submit" className="px-6 py-2 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600">Tạo mới</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

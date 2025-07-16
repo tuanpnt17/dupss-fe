@@ -32,18 +32,18 @@ export default function DatePicker({
       static: true,
       monthSelectorType: "static",
       locale: Vietnamese,
-      dateFormat: mode === "time" ? "H:i" : "Y-m-d",
+      dateFormat: mode === "time" ? "H:i" : "Y-m-d H:i",
       defaultDate,
+      enableTime: true,
+      time_24hr: true,
+      minTime: "08:00",
+      maxTime: "17:00",
       onChange: (selectedDates) => {
         if (onChange) onChange(selectedDates);
       },
     };
     if (mode === "time") {
-      options.enableTime = true;
       options.noCalendar = true;
-      options.time_24hr = true;
-      options.minTime = "08:00";
-      options.maxTime = "17:00";
     }
     const flatPickr = flatpickr(inputRef.current, options);
 
@@ -58,10 +58,24 @@ export default function DatePicker({
       if (typeof defaultDate === 'string') {
         inputRef.current.value = defaultDate;
       } else if (defaultDate instanceof Date) {
-        inputRef.current.value = defaultDate.toISOString().slice(0, 10);
+        // Format: YYYY-MM-DD HH:mm
+        const yyyy = defaultDate.getFullYear();
+        const mm = String(defaultDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(defaultDate.getDate()).padStart(2, '0');
+        const hh = String(defaultDate.getHours()).padStart(2, '0');
+        const mi = String(defaultDate.getMinutes()).padStart(2, '0');
+        inputRef.current.value = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
       } else if (Array.isArray(defaultDate) && defaultDate[0] instanceof Date) {
-        inputRef.current.value = defaultDate[0].toISOString().slice(0, 10);
+        const d = defaultDate[0];
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mi = String(d.getMinutes()).padStart(2, '0');
+        inputRef.current.value = `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
       }
+    } else if (inputRef.current) {
+      inputRef.current.value = '';
     }
   }, [defaultDate]);
 
