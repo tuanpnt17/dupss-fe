@@ -7,14 +7,22 @@ import { IGetStepDetail } from '@/types/steps';
 import { ICourseSection } from '@/types/courses';
 import { stepsService } from '@/services/steps.service';
 import { coursesService } from '@/services/courses.service';
+import useAuthStore from '@/stores/useAuthStore';
+import { IGetStepTracking } from '@/types/steps';
 
 export default function StepDetail({ params }: { params: { id: string, stepId: string } }) {
   const router = useRouter();
+  const authStore = useAuthStore();
+  const accessToken = authStore.accessToken;
+  const isLoggedIn = authStore.isLoggedIn;
   const [stepDetail, setStepDetail] = useState<IGetStepDetail | null>(null);
   const [courseSections, setCourseSections] = useState<ICourseSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [marking, setMarking] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [stepTracking, setStepTracking] = useState<IGetStepTracking[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,6 +46,18 @@ export default function StepDetail({ params }: { params: { id: string, stepId: s
         } else {
           setError('Không thể tải thông tin bài học');
         }
+        // Fetch step tracking if logged in
+        if (isLoggedIn) {
+          const trackingRes = await coursesService.getCourseTracking(params.id, accessToken || '');
+          if (trackingRes && trackingRes.value) {
+            setStepTracking(trackingRes.value);
+            setCompleted(trackingRes.value.some(track => track.id === params.stepId));
+          } else {
+            setCompleted(false);
+          }
+        } else {
+          setCompleted(false);
+        }
       } catch (err) {
         setError('Đã xảy ra lỗi khi tải dữ liệu');
         console.error('Error fetching data:', err);
@@ -47,7 +67,7 @@ export default function StepDetail({ params }: { params: { id: string, stepId: s
     };
 
     fetchData();
-  }, [params.stepId]);
+  }, [params.stepId, isLoggedIn, accessToken, params.id]);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
@@ -61,11 +81,33 @@ export default function StepDetail({ params }: { params: { id: string, stepId: s
     });
   };
 
-  // Calculate overall progress
-  const totalSteps = courseSections.reduce((sum, section) => sum + section.steps.length, 0);
-  const completedSteps = courseSections.reduce((sum, section) => 
-    sum + section.steps.filter(step => step.id === params.stepId).length, 0);
+  const handleMarkCompleted = async () => {
+    setMarking(true);
+    try {
+      await stepsService.markStepAsCompleted(params.stepId, accessToken || '');
+      // After marking as completed, refresh step tracking and completed state
+      if (isLoggedIn) {
+        const trackingRes = await coursesService.getCourseTracking(params.id, accessToken || '');
+        if (trackingRes && trackingRes.value) {
+          setStepTracking(trackingRes.value);
+          setCompleted(trackingRes.value.some(track => track.id === params.stepId));
+        } else {
+          setCompleted(false);
+        }
+      } else {
+        setCompleted(false);
+      }
+    } finally {
+      setMarking(false);
+    }
+  };
+
+  // Calculate overall progress using stepTracking
+  const allSteps = courseSections.flatMap(section => section.steps);
+  const totalSteps = allSteps.length;
+  const completedSteps = allSteps.filter(step => stepTracking.some(track => track.id === step.id)).length;
   const overallProgress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+  const isStepTracked = (stepId: string) => stepTracking.some(track => track.id === stepId);
 
   if (loading) {
     return (
@@ -101,7 +143,7 @@ export default function StepDetail({ params }: { params: { id: string, stepId: s
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <Link
-              href={`/courses/${stepDetail.courseSectionId}`}
+              href={`/courses/${params.id}`}
               className="text-gray-600 hover:text-orange-500 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,6 +193,18 @@ export default function StepDetail({ params }: { params: { id: string, stepId: s
                   className="prose max-w-none"
                   dangerouslySetInnerHTML={{ __html: stepDetail.content }}
                 />
+                {isLoggedIn && !completed && (
+                  <button
+                    className="mt-6 px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                    onClick={handleMarkCompleted}
+                    disabled={marking}
+                  >
+                    {marking ? 'Đang lưu...' : 'Đánh dấu hoàn thành'}
+                  </button>
+                )}
+                {completed && (
+                  <div className="mt-6 text-green-600 font-semibold">Đã hoàn thành bài học này!</div>
+                )}
               </div>
             </div>
 
@@ -248,7 +302,13 @@ export default function StepDetail({ params }: { params: { id: string, stepId: s
                                 onClick={() => router.push(`/courses/${params.id}/step/${step.id}`)}
                               >
                                 <div className="flex items-center gap-3 flex-1">
-                                  {step.id === params.stepId ? (
+                                  {isStepTracked(step.id) ? (
+                                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    </div>
+                                  ) : step.id === params.stepId ? (
                                     <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
                                       <div className="w-2 h-2 bg-white rounded-full"></div>
                                     </div>

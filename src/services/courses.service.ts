@@ -1,4 +1,5 @@
 import { ICourseSection, IGetAllCourses, IGetCourseDetail } from "@/types/courses";
+import { IGetStepDetail, IGetStepTracking } from "@/types/steps";
 import { sendRequest } from "@/utils/api";
 
 const REVALIDATE_TAG = {
@@ -35,9 +36,35 @@ const getCourseSections = async (id: string) => {
     return res;
 }
 
+const checkCourseRegistration = async (id: string, accessToken: string) => {
+    console.log("accessToken", accessToken);
+    const res = await sendRequest<IBackendResponse<any>>({
+        endpoint: `/Courses/${id}/check-registration`,
+        method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    })
+    return res;
+}
+
+const getCourseTracking = async (id: string, accessToken: string) => {
+    const res = await sendRequest<IBackendResponse<IGetStepTracking[]>>({
+        endpoint: `/Courses/${id}/step-trackings`,
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    })
+    return res;
+}
+
 export const coursesService = {
     REVALIDATE_TAG,
     getAllCourses,
     getCourseDetail,
     getCourseSections,
+    checkCourseRegistration,
+    getCourseTracking,
+    
 }

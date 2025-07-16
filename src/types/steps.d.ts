@@ -10,3 +10,10 @@ export interface IGetStepDetail {
     type: boolean;
     videoURL: string | null;
 }
+
+export interface IGetStepTracking {
+    id: string;
+    stepSummary: string;
+    stepNumber: number;
+}
+

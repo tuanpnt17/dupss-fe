@@ -4,14 +4,24 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { IGetCourseDetail, ICourseSection } from '@/types/courses';
+import { IGetStepTracking } from '@/types/steps';
 import { coursesService } from '@/services/courses.service';
+import useAuthStore from '@/stores/useAuthStore';
+import { courseRegistrationService } from '@/services/course-registration.service';
+import { stepsService } from '@/services/steps.service';
 
 const CourseDetail = ({ courseDetail }: { courseDetail: IGetCourseDetail }) => {
   const router = useRouter();
+  const authStore = useAuthStore();
+  const accessToken = authStore.accessToken;
+  const isLoggedIn = authStore.isLoggedIn;
+  const [isRegistered, setIsRegistered] = useState(false);
   const [sections, setSections] = useState<ICourseSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [stepTracking, setStepTracking] = useState<IGetStepTracking[]>([]);
+  const [markingStepId, setMarkingStepId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSections = async () => {
@@ -39,6 +49,31 @@ const CourseDetail = ({ courseDetail }: { courseDetail: IGetCourseDetail }) => {
     fetchSections();
   }, [courseDetail.id]);
 
+  useEffect(() => {
+    const fetchStepTracking = async () => {
+      if (isLoggedIn && isRegistered) {
+        const response = await coursesService.getCourseTracking(courseDetail.id, accessToken || '');
+        if (response && response.value) {
+          setStepTracking(response.value);
+        }
+      }
+    };
+    fetchStepTracking();
+  }, [isLoggedIn, isRegistered, courseDetail.id, accessToken]);
+
+  useEffect(() => {
+    const checkCourseRegistration = async () => {
+      console.log("accessToken", accessToken);
+      const response = await coursesService.checkCourseRegistration(courseDetail.id, accessToken || '');
+      if (response && response.value) {
+        setIsRegistered(response.value);
+      }
+    };
+    if (isLoggedIn) {
+      checkCourseRegistration();
+    }
+  }, [isLoggedIn, courseDetail.id, accessToken]);
+
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
       const newSet = new Set(prev);
@@ -51,11 +86,77 @@ const CourseDetail = ({ courseDetail }: { courseDetail: IGetCourseDetail }) => {
     });
   };
 
-  // Calculate progress based on completed steps (mock data for now)
-  const progress = 35; // This would come from user progress API
-  const lastAccessed = sections.length > 0 && sections[0].steps.length > 0 
-    ? sections[0].steps[0].stepSummary 
-    : 'Chưa bắt đầu';
+  const handleRegisterCourse = async () => {
+    const response = await courseRegistrationService.registerCourse(courseDetail.id, accessToken || '');
+    if (response && response.value) {
+      setIsRegistered(response.value);
+    }
+  };
+  // Calculate progress based on step tracking
+  const allSteps = sections.flatMap(section => section.steps);
+  const totalSteps = allSteps.length;
+  const completedSteps = allSteps.filter(step => stepTracking.some(track => track.id === step.id)).length;
+  const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+  // Find the last accessed step (the one with the highest stepNumber in tracking)
+  let lastAccessed = 'Chưa bắt đầu';
+  if (stepTracking.length > 0 && allSteps.length > 0) {
+    // Find the tracked step with the highest stepNumber
+    const trackedSteps = allSteps.filter(step => stepTracking.some(track => track.id === step.id));
+    if (trackedSteps.length > 0) {
+      const lastStep = trackedSteps.reduce((prev, curr) => (curr.stepNumber > prev.stepNumber ? curr : prev));
+      lastAccessed = lastStep.stepSummary;
+    }
+  }
+
+  const isStepCompleted = (stepId: string) => {
+    return stepTracking.some((track) => track.id === stepId);
+  };
+
+  const getFirstUncompletedStep = () => {
+    for (const section of sections) {
+      for (const step of section.steps) {
+        if (!isStepCompleted(step.id)) {
+          return { sectionId: section.id, stepId: step.id, stepNumber: step.stepNumber };
+        }
+      }
+    }
+    // If all steps are completed, return the first step
+    if (sections.length > 0 && sections[0].steps.length > 0) {
+      const step = sections[0].steps[0];
+      return { sectionId: sections[0].id, stepId: step.id, stepNumber: step.stepNumber };
+    }
+    return null;
+  };
+
+  const handleStartOrRegister = async () => {
+    if (!isRegistered) {
+      const response = await courseRegistrationService.registerCourse(courseDetail.id, accessToken || '');
+      if (response && response.value) {
+        setIsRegistered(response.value);
+      } else {
+        return;
+      }
+    }
+    // After registration or if already registered, navigate to the first uncompleted step
+    const nextStep = getFirstUncompletedStep();
+    if (nextStep) {
+      router.push(`/courses/${courseDetail.id}/step/${nextStep.stepId}`);
+    }
+  };
+
+  const handleMarkStepAsCompleted = async (stepId: string) => {
+    setMarkingStepId(stepId);
+    try {
+      await stepsService.markStepAsCompleted(stepId, accessToken || '');
+      // Refresh step tracking after marking as completed
+      const response = await coursesService.getCourseTracking(courseDetail.id, accessToken || '');
+      if (response && response.value) {
+        setStepTracking(response.value);
+      }
+    } finally {
+      setMarkingStepId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -107,6 +208,9 @@ const CourseDetail = ({ courseDetail }: { courseDetail: IGetCourseDetail }) => {
             </div>
             <p className="text-sm text-gray-600 mt-2">
               Bài học cuối: {lastAccessed}
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
+              Đã hoàn thành {completedSteps}/{totalSteps} bước học
             </p>
           </div>
         </div>
@@ -190,9 +294,24 @@ const CourseDetail = ({ courseDetail }: { courseDetail: IGetCourseDetail }) => {
                                 className="flex items-center justify-between py-2 hover:bg-gray-50 px-2 rounded cursor-pointer"
                               >
                                 <div className="flex items-center gap-3">
-                                  <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+                                  <div className={`w-5 h-5 border-2 rounded-full flex items-center justify-center ${isStepCompleted(step.id) ? 'border-green-500 bg-green-100' : 'border-gray-300'}`}>
+                                    {isStepCompleted(step.id) && (
+                                      <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </div>
                                   <span className="text-gray-700">{step.stepSummary}</span>
                                 </div>
+                                {!isStepCompleted(step.id) && isLoggedIn && isRegistered && (
+                                  <button
+                                    className="ml-4 px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                                    onClick={() => handleMarkStepAsCompleted(step.id)}
+                                    disabled={markingStepId === step.id}
+                                  >
+                                    {markingStepId === step.id ? 'Đang lưu...' : 'Đánh dấu hoàn thành'}
+                                  </button>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -227,12 +346,23 @@ const CourseDetail = ({ courseDetail }: { courseDetail: IGetCourseDetail }) => {
                     <span className="text-gray-600">Mã khóa học: {courseDetail.courseCode}</span>
                   </div>
                 </div>
-                <button 
-                  onClick={() => router.push(`/courses/${courseDetail.id}/step/1`)} 
-                  className="w-full mt-6 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
-                >
-                  Bắt đầu học
-                </button>
+                {isLoggedIn && (
+                  isRegistered ? (
+                    <button 
+                      onClick={handleStartOrRegister}
+                      className="w-full mt-6 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
+                    >
+                      Tiếp tục học
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleStartOrRegister}
+                      className="w-full mt-6 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
+                    >
+                      Đăng ký ngay
+                    </button>
+                  )
+                )}
               </div>
 
               {/* Resources Card */}

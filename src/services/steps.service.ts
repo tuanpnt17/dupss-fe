@@ -18,7 +18,18 @@ const getStepDetail = async (id: string) => {
 
     return res;
 }
+const markStepAsCompleted = async (id: string, accessToken: string) => {
+    const res = await sendRequest<IBackendResponse<any>>({
+        endpoint: `/steps/tracking/${id}`,
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },  
+    })
+    return res;
+}
 
 export const stepsService = {
     getStepDetail,
+    markStepAsCompleted
 }
