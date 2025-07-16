@@ -1,5 +1,5 @@
 // src/services/workshops.service.ts
-import { WorkshopQueryParams, WorkshopData, WorkshopRegistrationQueryParams, WorkshopRegistrationData } from "@/types/workshops";
+import { WorkshopQueryParams, WorkshopData, WorkshopRegistrationQueryParams, WorkshopRegistrationData, MyWorkshopRegistrationQueryParams } from "@/types/workshops";
 import { sendRequest } from "../utils/api";
 import revalidateService from "./revalidate.service";
 
@@ -90,6 +90,25 @@ const getWorkshopRegistrations = async (params: WorkshopRegistrationQueryParams 
 
   return res.isSuccess ? res.value : null;
 };
+// Workshop Registrations
+const getMyWorkshopRegistrations = async (params: MyWorkshopRegistrationQueryParams = {}, token: string): Promise<IModelPaginate<WorkshopData> | null> => {
+  const res = await sendRequest<IBackendResponse<IModelPaginate<WorkshopData>>>(
+    {
+      endpoint: "/workshops/my-registrations",
+      method: "GET",
+      queryParams: params,
+      nextOption: {
+        next: {
+          tags: [REVALIDATE_TAG.WORKSHOPS],
+        },
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return res.isSuccess ? res.value : null;
+};
 
 const getWorkshopRegistrationById = async (id: string): Promise<WorkshopRegistrationData | null> => {
   const res = await sendRequest<WorkshopRegistrationData>({
@@ -127,4 +146,5 @@ export const workshopsService = {
   getWorkshopRegistrations,
   getWorkshopRegistrationById,
   createWorkshopRegistration,
+  getMyWorkshopRegistrations
 };

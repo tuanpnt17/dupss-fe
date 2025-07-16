@@ -18,9 +18,8 @@ const LandingLayout = ({
             </Link>
             <nav className="hidden md:flex space-x-6">
               <Link href="#about" className="hover:text-orange-100 transition-colors">Giới Thiệu</Link>
-              <Link href="#stories" className="hover:text-orange-100 transition-colors">Câu Chuyện</Link>
               <Link href="/blogs" className="hover:text-orange-100 transition-colors">Blog</Link>
-              <Link href="#get-involved" className="hover:text-orange-100 transition-colors">Tham Gia</Link>
+              <Link href="/appointments" className="hover:text-orange-100 transition-colors">Tư vấn</Link>
               <Link href="/courses" className="hover:text-orange-100 transition-colors">Khóa học</Link>
               <Link href="/my-tests" className="hover:text-orange-100 transition-colors">Bài kiểm tra</Link>
               <Link href="/workshops" className="hover:text-orange-100 transition-colors">Workshop</Link>

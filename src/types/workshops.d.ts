@@ -94,3 +94,10 @@ export interface WorkshopQueryParams {
     imageUrl: string;
   }
   
+  export interface MyWorkshopRegistrationQueryParams {
+    Search?: string;
+    StartDate?: string;
+    PageIndex?: string;
+    PageSize?: string;
+  }
+  
